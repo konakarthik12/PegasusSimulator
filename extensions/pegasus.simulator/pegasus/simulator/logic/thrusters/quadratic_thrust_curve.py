@@ -41,7 +41,7 @@ class QuadraticThrustCurve(ThrustCurve):
         assert len(self._rolling_moment_coefficient) == self._num_rotors
 
         # Save the rotor direction of rotation
-        self._rot_dir = config.get("rot_dir", [-1, -1, 1, 1])
+        self._rot_dir = config.get("rot_dir", [-1, 1, -1, 1])
         assert len(self._rot_dir) == self._num_rotors
 
         # Values for the minimum and maximum rotor velocity in rad/s

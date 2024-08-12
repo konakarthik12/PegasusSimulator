@@ -47,6 +47,7 @@ class Vehicle(Robot):
     
     def __init__(
         self,
+        world,
         stage_prefix: str,
         usd_path: str = None,
         init_pos=[0.0, 0.0, 0.0],
@@ -65,6 +66,7 @@ class Vehicle(Robot):
             init_pos (list): The initial position of the vehicle in the inertial frame (in ENU convention). Defaults to [0.0, 0.0, 0.0].
             init_orientation (list): The initial orientation of the vehicle in quaternion [qx, qy, qz, qw]. Defaults to [0.0, 0.0, 0.0, 1.0].
         """
+
 
         # Get the current world at which we want to spawn the vehicle
         self._world = PegasusInterface().world
@@ -125,7 +127,7 @@ class Vehicle(Robot):
         # -------------------- Add sensors to the vehicle --------------------
         # --------------------------------------------------------------------
         self._sensors = sensors
-        
+
         for sensor in self._sensors:
             sensor.initialize(self, PegasusInterface().latitude, PegasusInterface().longitude, PegasusInterface().altitude)
 
@@ -152,7 +154,7 @@ class Vehicle(Robot):
 
         for graph in self._graphs:
             graph.initialize(self)
-        
+
         # --------------------------------------------------------------------
         # ---- Add (communication/control) backends to the vehicle -----------
         # --------------------------------------------------------------------
@@ -187,7 +189,7 @@ class Vehicle(Robot):
             State: The current state of the vehicle, i.e., position, orientation, linear and angular velocities...
         """
         return self._state
-    
+
     @property
     def vehicle_name(self) -> str:
         """Vehicle name.
@@ -265,6 +267,24 @@ class Vehicle(Robot):
         # Apply the force to the rigidbody. The force should be expressed in the rigidbody frame
         self.get_dc_interface().apply_body_force(rb, carb._carb.Float3(force), carb._carb.Float3(pos), False)
 
+    def get_gripper_pos(self, prim_path):
+        grip_1 = self._world.dc_interface.get_rigid_body(prim_path[0])
+        grip1_pose = self._world.dc_interface.get_rigid_body_pose(grip_1)
+        grip1_pos = grip1_pose.p
+
+        grip_2 = self._world.dc_interface.get_rigid_body(prim_path[1])
+        grip2_pose = self._world.dc_interface.get_rigid_body_pose(grip_2)
+        grip2_pos = grip2_pose.p
+
+        grip_3 = self._world.dc_interface.get_rigid_body(prim_path[2])
+        grip3_pose = self._world.dc_interface.get_rigid_body_pose(grip_3)
+        grip3_pos = grip3_pose.p
+
+        midpoint = np.array(((grip1_pos[0] + grip2_pos[0] + grip3_pos[0]) / 3,(grip1_pos[1] + grip2_pos[1] + grip3_pos[1]) / 3
+                    ,(grip1_pos[2] + grip2_pos[2] + grip3_pos[2]) / 3))
+
+        return midpoint
+
     def apply_torque(self, torque, body_part="/body"):
         """
         Method that when invoked applies a given torque vector to /<rigid_body_name>/"body" or to /<rigid_body_name>/<body_part>.
@@ -292,8 +312,14 @@ class Vehicle(Robot):
         # Get the body frame interface of the vehicle (this will be the frame used to get the position, orientation, etc.)
         body = self.get_dc_interface().get_rigid_body(self._stage_prefix + "/body")
 
+        # print("This is the stage prefix: ", self._stage_prefix)
+
         # Get the current position and orientation in the inertial frame
-        pose = self.get_dc_interface().get_rigid_body_pose(body)
+        # pose = self.get_dc_interface().get_rigid_body_pose(body)
+        pose = self.get_world_pose()[0]
+        # Update the state variable X = [x,y,z]
+        # self._state.position = np.array(pose.p)
+        self._state.position = np.array(pose)
 
         # Get the attitude according to the convention [w, x, y, z]
         prim = self._world.stage.GetPrimAtPath(self._stage_prefix + "/body")
@@ -311,8 +337,7 @@ class Vehicle(Robot):
         # Note: we must do this approximation, since the Isaac sim does not output the acceleration of the rigid body directly
         linear_acceleration = (np.array(linear_vel) - self._state.linear_velocity) / dt
 
-        # Update the state variable X = [x,y,z]
-        self._state.position = np.array(pose.p)
+
 
         # Get the quaternion according in the [qx,qy,qz,qw] standard
         self._state.attitude = np.array(
@@ -333,6 +358,20 @@ class Vehicle(Robot):
 
         # The acceleration of the vehicle expressed in the inertial frame X_ddot = [x_ddot, y_ddot, z_ddot]
         self._state.linear_acceleration = linear_acceleration
+
+        self._state.grippers_position = self.get_gripper_pos([self._stage_prefix + "/grip_1", self._stage_prefix + "/grip_2", self._stage_prefix + "/grip_3"])
+
+
+    def get_body_pose(self):
+        # # Get the body frame interface of the vehicle (this will be the frame used to get the position, orientation, etc.)
+        # body = self._world.dc_interface.get_rigid_body(self._stage_prefix + "/body")
+
+        # # print("This is the stage prefix: ", self._stage_prefix)
+
+        # # Get the current position and orientation in the inertial frame
+        # pose = self._world.dc_interface.get_rigid_body_pose(body)
+        # print("Body Pose of the Drone: ", pose)
+        return self.get_world_pose()[0]
 
     def start(self):
         """

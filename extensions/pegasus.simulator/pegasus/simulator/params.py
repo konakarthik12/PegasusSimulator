@@ -26,6 +26,7 @@ CONFIG_FILE = ROOT + "/pegasus.simulator/config/configs.yaml"
 # Define the Extension Assets Path
 ASSET_PATH = ROOT + "/pegasus.simulator/pegasus/simulator/assets"
 ROBOTS_ASSETS = ASSET_PATH + "/Robots"
+ENV_ASSETS = ASSET_PATH + "/Worlds"
 
 # Define the built in robots of the extension
 ROBOTS = {"Iris": ROBOTS_ASSETS + "/Iris/iris.usd"} #, "Flying Cube": ROBOTS_ASSETS + "/iris_cube.usda"}
