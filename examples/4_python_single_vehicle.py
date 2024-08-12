@@ -70,15 +70,17 @@ class PegasusApp:
         # Try to spawn the selected robot in the world to the specified namespace
         config_multirotor1 = MultirotorConfig()
         config_multirotor1.backends = [NonlinearController(
-            trajectory_file=self.curr_dir + "/trajectories/pitch_relay_90_deg_2.csv",
+            # fast_xyz_ellipse instead
+            trajectory_file=self.curr_dir + "/",
             results_file=self.curr_dir + "/results/single_statistics.npz",
             Ki=[0.5, 0.5, 0.5],
             Kr=[2.0, 2.0, 2.0]
         )]
 
+        drone_path = os.path.join("C:", "Users" , "willy" , "Research", "cross_drone13_v2" , "cross_drone13", "urdf", "cross_drone13", "cross_drone13_v6.usd")
         Multirotor(
-            "/World/quadrotor1",
-            ROBOTS['Iris'],
+            "/World/cross_medium",
+            drone_path,
             0,
             [2.3, -1.5, 0.07],
             Rotation.from_euler("XYZ", [0.0, 0.0, 0.0], degrees=True).as_quat(),
